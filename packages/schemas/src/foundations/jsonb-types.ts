@@ -149,6 +149,10 @@ export const connectorTargetsGuard = z.string().array();
 
 export type ConnectorTargets = z.infer<typeof connectorTargetsGuard>;
 
+export const customContentGuard = z.record(z.string());
+
+export type CustomContent = z.infer<typeof customContentGuard>;
+
 /**
  * Settings
  */
