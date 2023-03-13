@@ -1,5 +1,5 @@
 import type { SignInExperience } from '@logto/schemas';
-import { useCallback, useState, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { FieldNamesMarkedBoolean } from 'react-hook-form';
 
 import useDebounce from '@/hooks/use-debounce';
@@ -14,27 +14,52 @@ const usePreviewConfigs = (
   data?: SignInExperience,
   timeDelay = 2000 // Render the preview after the user stops typing in the custom CSS editing box for two seconds.
 ) => {
+  const { customCss, ...restFormData } = formData;
   const debounce = useDebounce(timeDelay);
-  const [previewConfigs, setPreviewConfigs] = useState<SignInExperience>();
+  const [previewConfigs, setPreviewConfigs] = useState<SignInExperience>(
+    isDirty ? signInExperienceParser.toRemoteModel(formData) : data
+  );
 
-  const parser = useCallback(() => {
+  // Const parser = useCallback(() => {
+  //   if (!isDirty) {
+  //     return data;
+  //   }
+
+  //   return signInExperienceParser.toRemoteModel(formData);
+  // }, [formData, isDirty, data]);
+
+  // useEffect(() => {
+  //   // Should delay the preview update if the user is typing in the custom CSS field.
+  //   if (dirtyFields.customCss) {
+  //     debounce(() => {
+  //       setPreviewConfigs(parser());
+  //     });
+  //   } else {
+  //     setPreviewConfigs(parser());
+  //   }
+  // }, [formData, isDirty]);
+
+  const realtimePreviewConfigs = useMemo(() => {
     if (!isDirty) {
       return data;
     }
 
-    return signInExperienceParser.toRemoteModel(formData);
-  }, [formData, isDirty, data]);
+    return signInExperienceParser.toRemoteModel({ ...restFormData, customCss });
+  }, [restFormData, isDirty, data]);
+
+  const delayedPreviewConfigs = useMemo(() => {
+    return signInExperienceParser.toRemoteModel({ ...restFormData, customCss });
+  }, [customCss]);
 
   useEffect(() => {
-    // Should delay the preview update if the user is typing in the custom CSS field.
-    if (dirtyFields.customCss) {
-      debounce(() => {
-        setPreviewConfigs(parser());
-      });
-    } else {
-      setPreviewConfigs(parser());
-    }
-  }, [formData, isDirty]);
+    setPreviewConfigs(realtimePreviewConfigs);
+  }, [restFormData, isDirty, data]);
+
+  useEffect(() => {
+    debounce(() => {
+      setPreviewConfigs(delayedPreviewConfigs);
+    });
+  }, [customCss]);
 
   return previewConfigs;
 };
